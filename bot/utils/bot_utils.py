@@ -1,3 +1,4 @@
+import functools
 import os
 import zlib
 from concurrent.futures import ThreadPoolExecutor
@@ -5,6 +6,7 @@ from functools import partial
 from pathlib import Path
 from re import match as re_match
 
+import anitopy
 import requests
 from aiohttp import ClientSession
 
@@ -240,6 +242,24 @@ class Encode_job:
 
 encode_job = Encode_job()
 
+
+def my_decorator(f):
+    @functools.wraps(f)
+    def patch_parse(filename, options=None):
+        if len(filename.split(".")) > 2:
+            root, ext = os.path.splitext(filename)
+            filename = root.replace(".", " ") + ext
+        if "varyg" in filename.casefold():
+            filename = "[VARYG] " + filename
+        kwargs = {"filename": filename}
+        if options:
+            kwargs.update({"options": options})
+        return f(**kwargs)
+
+    return patch_parse
+
+
+anitopy.parse = my_decorator(anitopy.parse)
 
 sdict = dict()
 sdict.update(
@@ -716,24 +736,24 @@ async def auto_rename(
 
 async def text_filter():
     """Read three filter (.txt) files and returns the contents"""
-    nft = Path("Namefilter.txt")
-    rft = Path("Releasefilter.txt")
-    rct = Path("Release_caption.txt")
+    nft = Path("filters/Namefilter.txt")
+    rft = Path("filters/Releasefilter.txt")
+    rct = Path("filters/Release_caption.txt")
 
     if nft.is_file():
-        with open("Namefilter.txt", "r") as file:
+        with open(nft, "r") as file:
             nf = file.read().strip()
             file.close()
     else:
         nf = None
     if rft.is_file():
-        with open("Releasefilter.txt", "r") as file:
+        with open(rft, "r") as file:
             rf = file.read().strip()
             file.close()
     else:
         rf = None
     if rct.is_file():
-        with open("Release_caption.txt", "r") as file:
+        with open(rct, "r") as file:
             rc = file.read().strip()
             file.close()
     else:
